@@ -1,25 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
   const [pending, setPending] = useState([]);
   const [approved, setApproved] = useState([]);
+  const navigate = useNavigate();
 
   const fetchPending = () => {
-    axios.get('http://localhost:5000/api/alumni/pending')
+    axios.get('http://localhost:5000/api/alumni/pending', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    })
       .then(res => setPending(res.data))
       .catch(err => console.error('Error fetching pending:', err));
   };
 
   const fetchApproved = () => {
-    axios.get('http://localhost:5000/api/alumni/approved')
+    axios.get('http://localhost:5000/api/alumni/approved', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    })
       .then(res => setApproved(res.data))
       .catch(err => console.error('Error fetching approved:', err));
   };
 
   const approve = async id => {
     try {
-      await axios.put(`http://localhost:5000/api/alumni/approve/${id}`);
+      await axios.put(`http://localhost:5000/api/alumni/approve/${id}`, {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       fetchPending();
       fetchApproved();
     } catch (err) {
@@ -29,7 +37,9 @@ export default function AdminDashboard() {
 
   const remove = async id => {
     try {
-      await axios.delete(`http://localhost:5000/api/alumni/${id}`);
+      await axios.delete(`http://localhost:5000/api/alumni/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       fetchPending();
       fetchApproved();
     } catch (err) {
@@ -38,9 +48,19 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchPending();
-    fetchApproved();
-  }, []);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+    } else {
+      fetchPending();
+      fetchApproved();
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
   const renderAlumniCard = (a, isPending) => (
     <div key={a._id} className="border p-4 my-3 rounded-lg shadow-md">
@@ -80,8 +100,18 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h2 className="text-3xl font-bold mb-6">Admin Dashboard</h2>
+    <div className="p-6 max-w-5xl mx-auto mt-24">
+
+      {/* Header with Logout */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-bold">Admin Dashboard</h2>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg shadow-md"
+        >
+          Logout
+        </button>
+      </div>
 
       {/* Pending Alumni Section */}
       <section className="mb-10">
@@ -105,8 +135,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-
-
-
-
